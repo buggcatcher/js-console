@@ -1,0 +1,210 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "IPinfo API Response",
+  "description": "Schema for IPinfo API response across Lite, Core, and Plus tiers",
+  "type": "object",
+  "properties": {
+    "ip": {
+      "type": "string",
+      "description": "The IP address being queried.",
+      "example": "51.68.57.72"
+    },
+    "hostname": {
+      "type": "string",
+      "description": "The hostname associated with the IP address.",
+      "example": "generic.hostname.com"
+    },
+    "geo": {
+      "type": "object",
+      "description": "Geographic location information for the IP address.",
+      "properties": {
+        "city": {
+          "type": "string",
+          "description": "The city where the IP address is located.",
+          "example": "Lille"
+        },
+        "region": {
+          "type": "string",
+          "description": "The region or state where the IP address is located.",
+          "example": "Hauts-de-France"
+        },
+        "region_code": {
+          "type": "string",
+          "description": "The two-letter region code in ISO 3166 format.",
+          "example": "HDF"
+        },
+        "country": {
+          "type": "string",
+          "description": "The country where the IP address is located.",
+          "example": "France"
+        },
+        "country_code": {
+          "type": "string",
+          "description": "The ISO 3166 country code of the IP address.",
+          "example": "FR"
+        },
+        "continent": {
+          "type": "string",
+          "description": "The continent where the IP address is located.",
+          "example": "Europe"
+        },
+        "continent_code": {
+          "type": "string",
+          "description": "The two-letter continent code.",
+          "example": "EU"
+        },
+        "latitude": {
+          "type": "number",
+          "description": "The latitude coordinate of the IP address location.",
+          "example": 50.63297
+        },
+        "longitude": {
+          "type": "number",
+          "description": "The longitude coordinate of the IP address location.",
+          "example": 3.05858
+        },
+        "timezone": {
+          "type": "string",
+          "description": "The local timezone of the IP address location, formatted according to the IANA Time Zone Database.",
+          "example": "Europe/Paris"
+        },
+        "postal_code": {
+          "type": "string",
+          "description": "The postal or zip code associated with the IP address location.",
+          "example": "59000"
+        },
+        "dma_code": {
+          "type": "string",
+          "description": "The Designated Market Area (DMA) code, representing a TV media market region.",
+          "example": "59"
+        },
+        "geoname_id": {
+          "type": "integer",
+          "description": "The unique numerical identifier for geographic locations from Geonames.org.",
+          "example": 2998324
+        },
+        "radius": {
+          "type": "integer",
+          "description": "The location accuracy radius in kilometers.",
+          "example": 200
+        },
+        "last_changed": {
+          "type": "string",
+          "format": "date",
+          "description": "The date when the IP address's location was last updated, in YYYY-MM-DD format (ISO-8601).",
+          "example": "2025-06-15"
+        }
+      }
+    },
+    "as": {
+      "type": "object",
+      "description": "Autonomous System (AS) information for the IP address.",
+      "properties": {
+        "asn": {
+          "type": "string",
+          "description": "The Autonomous System Number (ASN) identifying the organization that owns or operates the IP address.",
+          "example": "AS16276"
+        },
+        "name": {
+          "type": "string",
+          "description": "The official name of the Autonomous System (AS) organization.",
+          "example": "OVH SAS"
+        },
+        "domain": {
+          "type": "string",
+          "description": "The official domain name of the Autonomous System (AS) organization.",
+          "example": "ovhcloud.com"
+        },
+        "type": {
+          "type": "string",
+          "description": "The type of the Autonomous System (AS) organization, such as hosting, ISP, education, government, or business.",
+          "example": "hosting",
+          "enum": ["hosting", "isp", "education", "government", "business"]
+        },
+        "last_changed": {
+          "type": "string",
+          "format": "date",
+          "description": "The date when the IP address's ASN was last updated, in YYYY-MM-DD format (ISO-8601).",
+          "example": "2025-03-09"
+        }
+      }
+    },
+    "mobile": {
+      "type": "object",
+      "description": "Mobile carrier information for the IP address.",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the mobile carrier organization.",
+          "example": "dtac"
+        },
+        "mcc": {
+          "type": "string",
+          "description": "The Mobile Country Code (MCC) of the carrier.",
+          "example": "520"
+        },
+        "mnc": {
+          "type": "string",
+          "description": "The Mobile Network Code (MNC) of the carrier.",
+          "example": "05"
+        }
+      }
+    },
+    "anonymous": {
+      "type": "object",
+      "description": "Anonymity and privacy service detection information.",
+      "properties": {
+        "is_proxy": {
+          "type": "boolean",
+          "description": "Indicates whether the IP address is an open web proxy.",
+          "example": false
+        },
+        "is_relay": {
+          "type": "boolean",
+          "description": "Indicates whether the IP address is part of an anonymous relay service, such as iCloud Private Relay.",
+          "example": false
+        },
+        "is_tor": {
+          "type": "boolean",
+          "description": "Indicates whether the IP address is a TOR (The Onion Router) exit node.",
+          "example": false
+        },
+        "is_vpn": {
+          "type": "boolean",
+          "description": "Indicates whether the IP address is a Virtual Private Network (VPN) exit node.",
+          "example": true
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the privacy service provider, such as a VPN, Proxy, or Relay service provider.",
+          "example": "NordVPN"
+        }
+      }
+    },
+    "is_anonymous": {
+      "type": "boolean",
+      "description": "Indicates whether the IP address is anonymous. true if the IP address is associated with an IP privacy service.",
+      "example": false
+    },
+    "is_anycast": {
+      "type": "boolean",
+      "description": "Indicates whether the IP address is an anycast IP. true if the IP address maps to multiple physical servers.",
+      "example": false
+    },
+    "is_hosting": {
+      "type": "boolean",
+      "description": "Indicates whether the IP address is an internet service hosting IP address.",
+      "example": true
+    },
+    "is_mobile": {
+      "type": "boolean",
+      "description": "Indicates whether the IP address belongs to a mobile network.",
+      "example": false
+    },
+    "is_satellite": {
+      "type": "boolean",
+      "description": "Indicates whether the IP address is part of a satellite internet connection.",
+      "example": false
+    }
+  }
+}
