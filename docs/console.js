@@ -153,10 +153,10 @@ Comandi disponibili:
       }
 
       try {
-        // 1) IP pubblico da più endpoint
+        // 1) IP pubblico da più endpoint (rimuovi api.ipify.org per evitare errori CORS/tracking)
         let ip = null;
         let ipSources = [
-          'https://api.ipify.org?format=json',
+          //'https://api.ipify.org?format=json', // RIMOSSO: causa errori CORS/tracking
           'https://ipwho.is/',
           'https://api.bigdatacloud.net/data/client-ip'
         ];
