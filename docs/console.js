@@ -11,8 +11,8 @@ Comandi disponibili:
   cmd.ship()
   Mostra l'ASCII art della nave pirata
 
-  Mostra tutti i riferimenti a file esposti nella pagina
   cmd.ref()
+  Mostra tutti i riferimenti a file esposti nella pagina
 
   cmd.speak("testo")
   Sintetizza vocalmente il testo passato come argomento
@@ -360,7 +360,7 @@ Comandi disponibili:
                 <b>Geolocation Permission:</b> <span id='whoami-geoperm'>${geoPerm}</span><br>
                 <b>Camera Permission:</b> <span id='whoami-camperm'>${camPerm}</span><br>
                 <b>Microphone Permission:</b> <span id='whoami-micperm'>${micPerm}</span><br>
-                <br><br><br><p>></p>
+                <br><p>></p>
                 </div>
             `;
           }
