@@ -104,277 +104,269 @@ Comandi disponibili:
     modal.style.alignItems = 'center';
     modal.style.justifyContent = 'center';
     modal.style.zIndex = '10000';
-    modal.innerHTML = `
-      <div style="text-align:center; position:relative;">
-        <div style="font-size:2.5em;font-weight:bold;margin-bottom:3em;letter-spacing:2px;display:flex;align-items:center;justify-content:center;position:relative;">
-          <span style="text-align:center;">Hello</span>
-          <img src="esclamation_point.png" alt="!" style="height:1.2em;margin-left:0.08em;display:inline-block;vertical-align:middle;" />
-        </div>
-        <div style="background:rgba(0,0,0,0.7);padding:0em 0em; margin-top:0;display:inline-block;text-align:left;gap:0;">
-          <div><b>Data/Ora:</b> <span id='whoami-date'></span></div>
-          <div id='whoami-ipinfo'></div>
-          <div id='whoami-browserinfo'></div>
-        </div>
-      </div>
-    `;
     document.body.appendChild(modal);
-    // Chiudi il modal premendo "q"
-    function closeMatrixModalOnQ(e) {
-      if (e.key === 'q' || e.key === 'Q') {
-        const m = document.getElementById('whoami-modal');
-        if (m) m.remove();
-        window.removeEventListener('keydown', closeMatrixModalOnQ);
-      }
-    }
-    window.addEventListener('keydown', closeMatrixModalOnQ);
-    document.getElementById('whoami-date').textContent = new Date().toLocaleString();
-    // Fetch network info and show in modal
-    (async function () {
-      const outEl = document.getElementById('whoami-ipinfo');
-      outEl.textContent = 'Raccolta dati di rete…';
-      // Static mapping for continent from country code
-      const continentMap = {
-        AF: { code: 'AF', name: 'Africa' },
-        AN: { code: 'AN', name: 'Antarctica' },
-        AS: { code: 'AS', name: 'Asia' },
-        EU: { code: 'EU', name: 'Europe' },
-        NA: { code: 'NA', name: 'North America' },
-        OC: { code: 'OC', name: 'Oceania' },
-        SA: { code: 'SA', name: 'South America' }
-      };
-      function getContinent(countryCode) {
-        const map = {
-          US: 'NA', CA: 'NA', MX: 'NA', BR: 'SA', AR: 'SA', CO: 'SA', PE: 'SA', VE: 'SA',
-          GB: 'EU', FR: 'EU', DE: 'EU', IT: 'EU', ES: 'EU', RU: 'EU', UA: 'EU',
-          CN: 'AS', JP: 'AS', IN: 'AS', KR: 'AS', SA: 'AS',
-          AU: 'OC', NZ: 'OC',
-          ZA: 'AF', EG: 'AF', NG: 'AF',
-        };
-        const cont = map[countryCode];
-        return continentMap[cont] || { code: '??', name: 'Unknown' };
-      }
-      try {
-        let ip = null;
-        let ipSources = [
-          'https://ipwho.is/',
-          'https://api.bigdatacloud.net/data/client-ip'
-        ];
-        for (let url of ipSources) {
-          try {
-            let resp = await fetch(url);
-            let data = await resp.json();
-            if (data.ip) { ip = data.ip; break; }
-            if (data.ipAddress) { ip = data.ipAddress; break; }
-          } catch (e) {}
-        }
-        if (!ip) throw new Error('Impossibile ottenere IP pubblico');
-        let geo = null, geoSource = null;
-        const geoApis = [
-          { url: `https://ipwho.is/${ip}`, type: 'ipwhois' },
-          { url: `https://ip-api.io/json/${ip}`, type: 'ip-api.io' },
-          { url: `https://api.bigdatacloud.net/data/ip-geolocation-full?ip=${ip}&localityLanguage=en`, type: 'bigdatacloud' }
-        ];
-        for (let api of geoApis) {
-          try {
-            let resp = await fetch(api.url);
-            let data = await resp.json();
-            if ((api.type === 'ipwhois' && data.success) || (api.type === 'ip-api.io' && data.country_name) || (api.type === 'bigdatacloud' && data.location)) {
-              geo = data;
-              geoSource = api.type;
-              break;
-            }
-          } catch (e) {}
-        }
-        if (!geo) throw new Error('Impossibile ottenere dati geo');
-        let city = geo.city || geo.location?.city || geo.city_name || 'n/d';
-        let region = geo.region || geo.region_name || geo.principalSubdivision || 'n/d';
-        let country = geo.country || geo.country_name || geo.countryName || 'n/d';
-        let country_code = geo.country_code || geo.country_code2 || geo.countryCode || 'n/d';
-        let latitude = geo.latitude || geo.lat || geo.location?.latitude || 'n/d';
-        let longitude = geo.longitude || geo.lon || geo.location?.longitude || 'n/d';
-        let timezone = 'n/d';
-        if (typeof geo.timezone === 'string') {
-          timezone = geo.timezone;
-        } else if (typeof geo.timezone === 'object' && geo.timezone !== null && geo.timezone.id) {
-          timezone = geo.timezone.id;
-        } else if (geo.time_zone?.id) {
-          timezone = geo.time_zone.id;
-        } else if (geo.location?.timeZone?.ianaTimeId) {
-          timezone = geo.location.timeZone.ianaTimeId;
-        }
-        let postal = geo.postal || geo.postal_code || geo.postcode || geo.location?.postcode || 'n/d';
-        let asn = geo.connection?.asn || geo.asn || geo.asn_number || geo.network?.autonomousSystemNumber || 'n/d';
-        let org = geo.connection?.organization || geo.org || geo.organization || geo.network?.organisation || 'n/d';
-        let domain = geo.domain || geo.network?.organisation || 'n/d';
-        let mcc = geo.mobile_carrier?.mcc || geo.mcc || 'n/d';
-        let mnc = geo.mobile_carrier?.mnc || geo.mnc || 'n/d';
-        let carrier = geo.mobile_carrier?.name || geo.carrier || 'n/d';
-        let isAnonymous = geo.is_anonymous || geo.anonymous || geo.security?.isAnonymous || false;
-        let isProxy = geo.is_proxy || geo.proxy || geo.security?.isProxy || false;
-        let isVpn = geo.is_vpn || geo.vpn || geo.security?.isVpn || false;
-        let isTor = geo.is_tor || geo.tor || geo.security?.isTor || false;
-        const orgLower = (org || '').toLowerCase();
-        const asnStr = (asn || '').toString().toLowerCase();
-        const isHosting = /ovh|aws|google|azure|digitalocean|hetzner|linode|vultr|server|hosting|cloud/.test(orgLower + asnStr);
-        const isMobile = /mobile|wireless|telecom|vodafone|tim|orange|cellular|wind|iliad|h3g|3italia|fastweb|telefonica|t-mobile|verizon|at&t|sprint|mcc|mnc/.test(orgLower + carrier.toLowerCase());
-        const isSatellite = /starlink|viasat|hughes|satellite/.test(orgLower + asnStr);
-        let continent = getContinent(country_code);
-        outEl.innerHTML = `
-          <div><b>IP pubblico:</b> ${ip}</div>
-          <div><b>ASN:</b> ${asn}</div>
-          <div><b>Organizzazione:</b> ${org}</div>
-          <div><b>Dominio:</b> ${domain}</div>
-          <div><b>Località:</b> ${city}, ${region}, ${country}</div>
-          <div><b>Coordinate:</b> ${latitude}, ${longitude}</div>
-          <div><b>Continente:</b> ${continent.name} (${continent.code})</div>
-          <div><b>Codice paese:</b> ${country_code}</div>
-          <div><b>CAP:</b> ${postal}</div>
-          <div><b>MCC/MNC:</b> ${mcc}/${mnc}</div>
-          <div><b>Carrier:</b> ${carrier}</div>
-          <div><b>Hosting:</b> ${isHosting}</div>
-          <div><b>Mobile:</b> ${isMobile}</div>
-          <div><b>Satellite:</b> ${isSatellite}</div>
-          <div><b>VPN:</b> ${isVpn}</div>
-          <div><b>Proxy:</b> ${isProxy}</div>
-          <div><b>Tor:</b> ${isTor}</div>
-          <div><b>Anonymous:</b> ${isAnonymous}</div>
-        `;
-      } catch (e) {
-        outEl.textContent = 'Errore nel recupero dati di rete.';
-      }
-    })();
-    // Collect extended browser/device info
-    (function () {
-      const el = document.getElementById('whoami-browserinfo');
-      function getBrowserData() {
-        const ua = navigator.userAgent;
-        const platform = navigator.platform || 'n/d';
-        const vendor = navigator.vendor || 'n/d';
-        const isMobile = /Mobi|Android|iPhone|iPad|Mobile/.test(ua);
-        let browserName = 'Unknown', browserVersion = 'Unknown', engine = 'Unknown';
-        if (/Chrome\//.test(ua)) { browserName = 'Chrome'; engine = 'Blink'; browserVersion = ua.match(/Chrome\/([\d.]+)/)?.[1] || 'n/d'; }
-        else if (/Firefox\//.test(ua)) { browserName = 'Firefox'; engine = 'Gecko'; browserVersion = ua.match(/Firefox\/([\d.]+)/)?.[1] || 'n/d'; }
-        else if (/Safari\//.test(ua) && !/Chrome\//.test(ua)) { browserName = 'Safari'; engine = 'WebKit'; browserVersion = ua.match(/Version\/([\d.]+)/)?.[1] || 'n/d'; }
-        else if (/Edg\//.test(ua)) { browserName = 'Edge'; engine = 'Blink'; browserVersion = ua.match(/Edg\/([\d.]+)/)?.[1] || 'n/d'; }
-        else if (/OPR\//.test(ua)) { browserName = 'Opera'; engine = 'Blink'; browserVersion = ua.match(/OPR\/([\d.]+)/)?.[1] || 'n/d'; }
-        // OS detection
-        let os = 'Unknown', osVersion = 'Unknown', arch = 'Unknown';
-        if (/Windows NT/.test(ua)) { os = 'Windows'; osVersion = ua.match(/Windows NT ([\d.]+)/)?.[1] || 'n/d'; }
-        else if (/Mac OS X/.test(ua)) { os = 'macOS'; osVersion = ua.match(/Mac OS X ([\d_]+)/)?.[1]?.replace(/_/g,'.') || 'n/d'; }
-        else if (/Android/.test(ua)) { os = 'Android'; osVersion = ua.match(/Android ([\d.]+)/)?.[1] || 'n/d'; }
-        else if (/Linux/.test(ua)) { os = 'Linux'; }
-        else if (/iPhone|iPad|iPod/.test(ua)) { os = 'iOS'; }
-        // CPU arch
-        if (/arm|aarch64/i.test(ua)) arch = 'ARM';
-        else if (/x86_64|Win64|WOW64|amd64/i.test(ua)) arch = 'x86_64';
-        else if (/i686|i386|x86/i.test(ua)) arch = 'x86';
-        // UserAgentData (Chromium)
-        let uaData = navigator.userAgentData || null;
-        let brands = '', uaPlatform = '', uaArch = '', uaMobile = '';
-        if (uaData) {
-          brands = uaData.brands?.map(b=>b.brand+" "+b.version).join(', ') || '';
-          uaPlatform = uaData.platform || '';
-          uaArch = uaData.architecture || '';
-          uaMobile = uaData.mobile ? 'Mobile' : 'Desktop';
-        }
-        // Language & locale
-        const languages = navigator.languages ? navigator.languages.join(', ') : 'n/d';
-        const locale = Intl.DateTimeFormat().resolvedOptions().locale || 'n/d';
-        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'n/d';
-        const utcOffset = -new Date().getTimezoneOffset()/60;
-        // Screen & window
-        const screenRes = screen.width + ' x ' + screen.height;
-        const availRes = screen.availWidth + ' x ' + screen.availHeight;
-        const colorDepth = screen.colorDepth;
-        const pixelRatio = window.devicePixelRatio;
-        const orientation = (screen.orientation && screen.orientation.type) || (window.orientation !== undefined ? window.orientation : 'n/d');
-        const winInner = window.innerWidth + ' x ' + window.innerHeight;
-        const winOuter = window.outerWidth + ' x ' + window.outerHeight;
-        // Hardware
-        const cpuCores = navigator.hardwareConcurrency || 'n/d';
-        const deviceMemory = navigator.deviceMemory || 'n/d';
-        const maxTouch = navigator.maxTouchPoints || 0;
-        const pointerType = window.matchMedia('(pointer: coarse)').matches ? 'touch' : 'mouse';
-        // Battery
-        let batteryInfo = 'n/d';
-        if (navigator.getBattery) {
-          navigator.getBattery().then(bat => {
-            batteryInfo = `Level: ${Math.round(bat.level*100)}%, Charging: ${bat.charging}`;
-            el.querySelector('#whoami-battery').textContent = batteryInfo;
-          });
-        }
-        // Graphics
-        let glVendor = 'n/d', glRenderer = 'n/d';
-        try {
-          const canvas = document.createElement('canvas');
-          const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-          if (gl) {
-            const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
-            if (debugInfo) {
-              glVendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL);
-              glRenderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
-            }
+    fetch('matrix.html')
+      .then(resp => resp.text())
+      .then(html => {
+        modal.innerHTML = html;
+        // Chiudi il modal premendo "q"
+        function closeMatrixModalOnQ(e) {
+          if (e.key === 'q' || e.key === 'Q') {
+            const m = document.getElementById('whoami-modal');
+            if (m) m.remove();
+            window.removeEventListener('keydown', closeMatrixModalOnQ);
           }
-        } catch(e){}
-        // Permissions
-        let geoPerm = 'n/d', camPerm = 'n/d', micPerm = 'n/d';
-        if (navigator.permissions) {
-          navigator.permissions.query({name:'geolocation'}).then(r=>{el.querySelector('#whoami-geoperm').textContent = r.state;});
-          navigator.permissions.query({name:'camera'}).then(r=>{el.querySelector('#whoami-camperm').textContent = r.state;});
-          navigator.permissions.query({name:'microphone'}).then(r=>{el.querySelector('#whoami-micperm').textContent = r.state;});
         }
-        // Storage
-        let cookies = document.cookie || 'n/d';
-        let localStorageLen = localStorage.length;
-        let sessionStorageLen = sessionStorage.length;
-        // Accessibility
-        const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'reduce' : 'no-preference';
-        const colorScheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-        // History
-        const url = location.href;
-        const referrer = document.referrer || 'n/d';
-        const historyLen = history.length;
-        // Compose HTML
-        return `
-          <div style='margin-top:1em;'>
-            <b>Browser:</b> ${browserName} ${browserVersion} (${brands})<br>
-            <b>Rendering Engine:</b> ${engine}<br>
-            <b>Vendor:</b> ${vendor}<br>
-            <b>Platform:</b> ${platform} ${uaPlatform}<br>
-            <b>CPU Arch:</b> ${arch} ${uaArch}<br>
-            <b>Mobile/Desktop:</b> ${isMobile ? 'Mobile' : 'Desktop'} ${uaMobile}<br>
-            <b>Languages:</b> ${languages}<br>
-            <b>Locale:</b> ${locale}<br>
-            <b>UTC Offset:</b> ${utcOffset}<br>
-            <b>Screen:</b> ${screenRes}, Color Depth: ${colorDepth}, Pixel Ratio: ${pixelRatio}<br>
-            <b>Available Screen:</b> ${availRes}<br>
-            <b>Window (inner):</b> ${winInner}<br>
-            <b>Window (outer):</b> ${winOuter}<br>
-            <b>Orientation:</b> ${orientation}<br>
-            <b>CPU Cores:</b> ${cpuCores}<br>
-            <b>Device Memory:</b> ${deviceMemory} GB<br>
-            <b>Touch Points:</b> ${maxTouch}<br>
-            <b>Pointer Type:</b> ${pointerType}<br>
-            <b>Battery:</b> <span id='whoami-battery'>${batteryInfo}</span><br>
-            <b>WebGL Vendor:</b> ${glVendor}<br>
-            <b>WebGL Renderer:</b> ${glRenderer}<br>
-            <b>Cookies:</b> ${cookies}<br>
-            <b>localStorage items:</b> ${localStorageLen}<br>
-            <b>sessionStorage items:</b> ${sessionStorageLen}<br>
-            <b>Reduced Motion:</b> ${reducedMotion}<br>
-            <b>Color Scheme:</b> ${colorScheme}<br>
-            <b>Current URL:</b> ${url}<br>
-            <b>Referrer:</b> ${referrer}<br>
-            <b>History Length:</b> ${historyLen}<br>
-            <b>Geolocation Permission:</b> <span id='whoami-geoperm'>${geoPerm}</span><br>
-            <b>Camera Permission:</b> <span id='whoami-camperm'>${camPerm}</span><br>
-            <b>Microphone Permission:</b> <span id='whoami-micperm'>${micPerm}</span><br>
-            <br><br><br><p>></p>
-            </div>
-        `;
-      }
-      el.innerHTML = getBrowserData();
-    })();
+        window.addEventListener('keydown', closeMatrixModalOnQ);
+        document.getElementById('whoami-date').textContent = new Date().toLocaleString();
+        // Fetch network info and show in modal
+        (async function () {
+          const outEl = document.getElementById('whoami-ipinfo');
+          outEl.textContent = 'Raccolta dati di rete…';
+          // Static mapping for continent from country code
+          const continentMap = {
+            AF: { code: 'AF', name: 'Africa' },
+            AN: { code: 'AN', name: 'Antarctica' },
+            AS: { code: 'AS', name: 'Asia' },
+            EU: { code: 'EU', name: 'Europe' },
+            NA: { code: 'NA', name: 'North America' },
+            OC: { code: 'OC', name: 'Oceania' },
+            SA: { code: 'SA', name: 'South America' }
+          };
+          function getContinent(countryCode) {
+            const map = {
+              US: 'NA', CA: 'NA', MX: 'NA', BR: 'SA', AR: 'SA', CO: 'SA', PE: 'SA', VE: 'SA',
+              GB: 'EU', FR: 'EU', DE: 'EU', IT: 'EU', ES: 'EU', RU: 'EU', UA: 'EU',
+              CN: 'AS', JP: 'AS', IN: 'AS', KR: 'AS', SA: 'AS',
+              AU: 'OC', NZ: 'OC',
+              ZA: 'AF', EG: 'AF', NG: 'AF',
+            };
+            const cont = map[countryCode];
+            return continentMap[cont] || { code: '??', name: 'Unknown' };
+          }
+          try {
+            let ip = null;
+            let ipSources = [
+              'https://ipwho.is/',
+              'https://api.bigdatacloud.net/data/client-ip'
+            ];
+            for (let url of ipSources) {
+              try {
+                let resp = await fetch(url);
+                let data = await resp.json();
+                if (data.ip) { ip = data.ip; break; }
+                if (data.ipAddress) { ip = data.ipAddress; break; }
+              } catch (e) {}
+            }
+            if (!ip) throw new Error('Impossibile ottenere IP pubblico');
+            let geo = null, geoSource = null;
+            const geoApis = [
+              { url: `https://ipwho.is/${ip}`, type: 'ipwhois' },
+              { url: `https://ip-api.io/json/${ip}`, type: 'ip-api.io' },
+              { url: `https://api.bigdatacloud.net/data/ip-geolocation-full?ip=${ip}&localityLanguage=en`, type: 'bigdatacloud' }
+            ];
+            for (let api of geoApis) {
+              try {
+                let resp = await fetch(api.url);
+                let data = await resp.json();
+                if ((api.type === 'ipwhois' && data.success) || (api.type === 'ip-api.io' && data.country_name) || (api.type === 'bigdatacloud' && data.location)) {
+                  geo = data;
+                  geoSource = api.type;
+                  break;
+                }
+              } catch (e) {}
+            }
+            if (!geo) throw new Error('Impossibile ottenere dati geo');
+            let city = geo.city || geo.location?.city || geo.city_name || 'n/d';
+            let region = geo.region || geo.region_name || geo.principalSubdivision || 'n/d';
+            let country = geo.country || geo.country_name || geo.countryName || 'n/d';
+            let country_code = geo.country_code || geo.country_code2 || geo.countryCode || 'n/d';
+            let latitude = geo.latitude || geo.lat || geo.location?.latitude || 'n/d';
+            let longitude = geo.longitude || geo.lon || geo.location?.longitude || 'n/d';
+            let timezone = 'n/d';
+            if (typeof geo.timezone === 'string') {
+              timezone = geo.timezone;
+            } else if (typeof geo.timezone === 'object' && geo.timezone !== null && geo.timezone.id) {
+              timezone = geo.timezone.id;
+            } else if (geo.time_zone?.id) {
+              timezone = geo.time_zone.id;
+            } else if (geo.location?.timeZone?.ianaTimeId) {
+              timezone = geo.location.timeZone.ianaTimeId;
+            }
+            let postal = geo.postal || geo.postal_code || geo.postcode || geo.location?.postcode || 'n/d';
+            let asn = geo.connection?.asn || geo.asn || geo.asn_number || geo.network?.autonomousSystemNumber || 'n/d';
+            let org = geo.connection?.organization || geo.org || geo.organization || geo.network?.organisation || 'n/d';
+            let domain = geo.domain || geo.network?.organisation || 'n/d';
+            let mcc = geo.mobile_carrier?.mcc || geo.mcc || 'n/d';
+            let mnc = geo.mobile_carrier?.mnc || geo.mnc || 'n/d';
+            let carrier = geo.mobile_carrier?.name || geo.carrier || 'n/d';
+            let isAnonymous = geo.is_anonymous || geo.anonymous || geo.security?.isAnonymous || false;
+            let isProxy = geo.is_proxy || geo.proxy || geo.security?.isProxy || false;
+            let isVpn = geo.is_vpn || geo.vpn || geo.security?.isVpn || false;
+            let isTor = geo.is_tor || geo.tor || geo.security?.isTor || false;
+            const orgLower = (org || '').toLowerCase();
+            const asnStr = (asn || '').toString().toLowerCase();
+            const isHosting = /ovh|aws|google|azure|digitalocean|hetzner|linode|vultr|server|hosting|cloud/.test(orgLower + asnStr);
+            const isMobile = /mobile|wireless|telecom|vodafone|tim|orange|cellular|wind|iliad|h3g|3italia|fastweb|telefonica|t-mobile|verizon|at&t|sprint|mcc|mnc/.test(orgLower + carrier.toLowerCase());
+            const isSatellite = /starlink|viasat|hughes|satellite/.test(orgLower + asnStr);
+            let continent = getContinent(country_code);
+            outEl.innerHTML = `
+              <div><b>IP pubblico:</b> ${ip}</div>
+              <div><b>ASN:</b> ${asn}</div>
+              <div><b>Organizzazione:</b> ${org}</div>
+              <div><b>Dominio:</b> ${domain}</div>
+              <div><b>Località:</b> ${city}, ${region}, ${country}</div>
+              <div><b>Coordinate:</b> ${latitude}, ${longitude}</div>
+              <div><b>Continente:</b> ${continent.name} (${continent.code})</div>
+              <div><b>Codice paese:</b> ${country_code}</div>
+              <div><b>CAP:</b> ${postal}</div>
+              <div><b>MCC/MNC:</b> ${mcc}/${mnc}</div>
+              <div><b>Carrier:</b> ${carrier}</div>
+              <div><b>Hosting:</b> ${isHosting}</div>
+              <div><b>Mobile:</b> ${isMobile}</div>
+              <div><b>Satellite:</b> ${isSatellite}</div>
+              <div><b>VPN:</b> ${isVpn}</div>
+              <div><b>Proxy:</b> ${isProxy}</div>
+              <div><b>Tor:</b> ${isTor}</div>
+              <div><b>Anonymous:</b> ${isAnonymous}</div>
+            `;
+          } catch (e) {
+            outEl.textContent = 'Errore nel recupero dati di rete.';
+          }
+        })();
+        // Collect extended browser/device info
+        (function () {
+          const el = document.getElementById('whoami-browserinfo');
+          function getBrowserData() {
+            const ua = navigator.userAgent;
+            const platform = navigator.platform || 'n/d';
+            const vendor = navigator.vendor || 'n/d';
+            const isMobile = /Mobi|Android|iPhone|iPad|Mobile/.test(ua);
+            let browserName = 'Unknown', browserVersion = 'Unknown', engine = 'Unknown';
+            if (/Chrome\//.test(ua)) { browserName = 'Chrome'; engine = 'Blink'; browserVersion = ua.match(/Chrome\/([\d.]+)/)?.[1] || 'n/d'; }
+            else if (/Firefox\//.test(ua)) { browserName = 'Firefox'; engine = 'Gecko'; browserVersion = ua.match(/Firefox\/([\d.]+)/)?.[1] || 'n/d'; }
+            else if (/Safari\//.test(ua) && !/Chrome\//.test(ua)) { browserName = 'Safari'; engine = 'WebKit'; browserVersion = ua.match(/Version\/([\d.]+)/)?.[1] || 'n/d'; }
+            else if (/Edg\//.test(ua)) { browserName = 'Edge'; engine = 'Blink'; browserVersion = ua.match(/Edg\/([\d.]+)/)?.[1] || 'n/d'; }
+            else if (/OPR\//.test(ua)) { browserName = 'Opera'; engine = 'Blink'; browserVersion = ua.match(/OPR\/([\d.]+)/)?.[1] || 'n/d'; }
+            // OS detection
+            let os = 'Unknown', osVersion = 'Unknown', arch = 'Unknown';
+            if (/Windows NT/.test(ua)) { os = 'Windows'; osVersion = ua.match(/Windows NT ([\d.]+)/)?.[1] || 'n/d'; }
+            else if (/Mac OS X/.test(ua)) { os = 'macOS'; osVersion = ua.match(/Mac OS X ([\d_]+)/)?.[1]?.replace(/_/g,'.') || 'n/d'; }
+            else if (/Android/.test(ua)) { os = 'Android'; osVersion = ua.match(/Android ([\d.]+)/)?.[1] || 'n/d'; }
+            else if (/Linux/.test(ua)) { os = 'Linux'; }
+            else if (/iPhone|iPad|iPod/.test(ua)) { os = 'iOS'; }
+            // CPU arch
+            if (/arm|aarch64/i.test(ua)) arch = 'ARM';
+            else if (/x86_64|Win64|WOW64|amd64/i.test(ua)) arch = 'x86_64';
+            else if (/i686|i386|x86/i.test(ua)) arch = 'x86';
+            // UserAgentData (Chromium)
+            let uaData = navigator.userAgentData || null;
+            let brands = '', uaPlatform = '', uaArch = '', uaMobile = '';
+            if (uaData) {
+              brands = uaData.brands?.map(b=>b.brand+" "+b.version).join(', ') || '';
+              uaPlatform = uaData.platform || '';
+              uaArch = uaData.architecture || '';
+              uaMobile = uaData.mobile ? 'Mobile' : 'Desktop';
+            }
+            // Language & locale
+            const languages = navigator.languages ? navigator.languages.join(', ') : 'n/d';
+            const locale = Intl.DateTimeFormat().resolvedOptions().locale || 'n/d';
+            const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'n/d';
+            const utcOffset = -new Date().getTimezoneOffset()/60;
+            // Screen & window
+            const screenRes = screen.width + ' x ' + screen.height;
+            const availRes = screen.availWidth + ' x ' + screen.availHeight;
+            const colorDepth = screen.colorDepth;
+            const pixelRatio = window.devicePixelRatio;
+            const orientation = (screen.orientation && screen.orientation.type) || (window.orientation !== undefined ? window.orientation : 'n/d');
+            const winInner = window.innerWidth + ' x ' + window.innerHeight;
+            const winOuter = window.outerWidth + ' x ' + window.outerHeight;
+            // Hardware
+            const cpuCores = navigator.hardwareConcurrency || 'n/d';
+            const deviceMemory = navigator.deviceMemory || 'n/d';
+            const maxTouch = navigator.maxTouchPoints || 0;
+            const pointerType = window.matchMedia('(pointer: coarse)').matches ? 'touch' : 'mouse';
+            // Battery
+            let batteryInfo = 'n/d';
+            if (navigator.getBattery) {
+              navigator.getBattery().then(bat => {
+                batteryInfo = `Level: ${Math.round(bat.level*100)}%, Charging: ${bat.charging}`;
+                el.querySelector('#whoami-battery').textContent = batteryInfo;
+              });
+            }
+            // Graphics
+            let glVendor = 'n/d', glRenderer = 'n/d';
+            try {
+              const canvas = document.createElement('canvas');
+              const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+              if (gl) {
+                const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+                if (debugInfo) {
+                  glVendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL);
+                  glRenderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+                }
+              }
+            } catch(e){}
+            // Permissions
+            let geoPerm = 'n/d', camPerm = 'n/d', micPerm = 'n/d';
+            if (navigator.permissions) {
+              navigator.permissions.query({name:'geolocation'}).then(r=>{el.querySelector('#whoami-geoperm').textContent = r.state;});
+              navigator.permissions.query({name:'camera'}).then(r=>{el.querySelector('#whoami-camperm').textContent = r.state;});
+              navigator.permissions.query({name:'microphone'}).then(r=>{el.querySelector('#whoami-micperm').textContent = r.state;});
+            }
+            // Storage
+            let cookies = document.cookie || 'n/d';
+            let localStorageLen = localStorage.length;
+            let sessionStorageLen = sessionStorage.length;
+            // Accessibility
+            const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'reduce' : 'no-preference';
+            const colorScheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            // History
+            const url = location.href;
+            const referrer = document.referrer || 'n/d';
+            const historyLen = history.length;
+            // Compose HTML
+            return `
+              <div style='margin-top:1em;'>
+                <b>Browser:</b> ${browserName} ${browserVersion} (${brands})<br>
+                <b>Rendering Engine:</b> ${engine}<br>
+                <b>Vendor:</b> ${vendor}<br>
+                <b>Platform:</b> ${platform} ${uaPlatform}<br>
+                <b>CPU Arch:</b> ${arch} ${uaArch}<br>
+                <b>Mobile/Desktop:</b> ${isMobile ? 'Mobile' : 'Desktop'} ${uaMobile}<br>
+                <b>Languages:</b> ${languages}<br>
+                <b>Locale:</b> ${locale}<br>
+                <b>UTC Offset:</b> ${utcOffset}<br>
+                <b>Screen:</b> ${screenRes}, Color Depth: ${colorDepth}, Pixel Ratio: ${pixelRatio}<br>
+                <b>Available Screen:</b> ${availRes}<br>
+                <b>Window (inner):</b> ${winInner}<br>
+                <b>Window (outer):</b> ${winOuter}<br>
+                <b>Orientation:</b> ${orientation}<br>
+                <b>CPU Cores:</b> ${cpuCores}<br>
+                <b>Device Memory:</b> ${deviceMemory} GB<br>
+                <b>Touch Points:</b> ${maxTouch}<br>
+                <b>Pointer Type:</b> ${pointerType}<br>
+                <b>Battery:</b> <span id='whoami-battery'>${batteryInfo}</span><br>
+                <b>WebGL Vendor:</b> ${glVendor}<br>
+                <b>WebGL Renderer:</b> ${glRenderer}<br>
+                <b>Cookies:</b> ${cookies}<br>
+                <b>localStorage items:</b> ${localStorageLen}<br>
+                <b>sessionStorage items:</b> ${sessionStorageLen}<br>
+                <b>Reduced Motion:</b> ${reducedMotion}<br>
+                <b>Color Scheme:</b> ${colorScheme}<br>
+                <b>Current URL:</b> ${url}<br>
+                <b>Referrer:</b> ${referrer}<br>
+                <b>History Length:</b> ${historyLen}<br>
+                <b>Geolocation Permission:</b> <span id='whoami-geoperm'>${geoPerm}</span><br>
+                <b>Camera Permission:</b> <span id='whoami-camperm'>${camPerm}</span><br>
+                <b>Microphone Permission:</b> <span id='whoami-micperm'>${micPerm}</span><br>
+                <br><br><br><p>></p>
+                </div>
+            `;
+          }
+          el.innerHTML = getBrowserData();
+        })();
+      });
   },
   cache: function () {
     // Cache API
@@ -419,6 +411,51 @@ Comandi disponibili:
       }
     } else {
       console.log('sessionStorage vuoto.');
+    }
+    // Cookies
+    if (document.cookie && document.cookie.length > 0) {
+      console.log('Cookies:');
+      document.cookie.split(';').forEach(cookie => {
+        const [name, ...rest] = cookie.split('=');
+        console.log(name.trim(), rest.join('=').trim());
+      });
+    } else {
+      console.log('Nessun cookie trovato.');
+    }
+    // IndexedDB
+    if ('indexedDB' in window) {
+      let req = indexedDB.databases ? indexedDB.databases() : Promise.resolve([]);
+      req.then(dbs => {
+        if (!dbs || dbs.length === 0) {
+          console.log('Nessun database IndexedDB trovato.');
+        } else {
+          dbs.forEach(db => {
+            console.log(`IndexedDB: ${db.name} (versione ${db.version})`);
+            let openReq = indexedDB.open(db.name);
+            openReq.onsuccess = function (event) {
+              const database = event.target.result;
+              Array.from(database.objectStoreNames).forEach(storeName => {
+                const tx = database.transaction(storeName, 'readonly');
+                const store = tx.objectStore(storeName);
+                const getAllReq = store.getAllKeys();
+                getAllReq.onsuccess = function () {
+                  console.log(`  Store: ${storeName}, Chiavi:`, getAllReq.result);
+                };
+                getAllReq.onerror = function () {
+                  console.log(`  Store: ${storeName}, errore nel recupero chiavi.`);
+                };
+              });
+            };
+            openReq.onerror = function () {
+              console.log(`Errore nell'apertura di IndexedDB: ${db.name}`);
+            };
+          });
+        }
+      }).catch(() => {
+        console.log('Impossibile elencare i database IndexedDB.');
+      });
+    } else {
+      console.log('IndexedDB non supportato dal browser.');
     }
   },
   fetch: async function (file) {
