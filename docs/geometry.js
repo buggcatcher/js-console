@@ -50,6 +50,8 @@ function updateOverlay() {
   overlayCtx.fillRect(0, 0, overlayCanvas.width, overlayCanvas.height);
 }
 
+var meshList = [];
+
 function init() {
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setPixelRatio((window.devicePixelRatio) ? window.devicePixelRatio : 1);
@@ -82,11 +84,12 @@ function init() {
   });
 
   for (var i = 0; i < 1000; i++) {
-    var mesh = new THREE.Mesh(geometry, material);
+    var mesh = new THREE.Mesh(geometry, material.clone());
     mesh.position.set(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize();
     mesh.position.multiplyScalar(90 + (Math.random() * 700));
     mesh.rotation.set(Math.random() * 2, Math.random() * 2, Math.random() * 2);
     particle.add(mesh);
+    meshList.push(mesh);
   }
 
   var mat = new THREE.MeshPhongMaterial({
@@ -101,13 +104,15 @@ function init() {
 
   });
 
-  var planet = new THREE.Mesh(geom, mat);
+  var planet = new THREE.Mesh(geom, mat.clone());
   planet.scale.x = planet.scale.y = planet.scale.z = 16;
   circle.add(planet);
+  meshList.push(planet);
 
-  var planet2 = new THREE.Mesh(geom2, mat2);
+  var planet2 = new THREE.Mesh(geom2, mat2.clone());
   planet2.scale.x = planet2.scale.y = planet2.scale.z = 10;
   skelet.add(planet2);
+  meshList.push(planet2);
 
   var ambientLight = new THREE.AmbientLight(0x999999 );
   scene.add(ambientLight);
@@ -138,6 +143,33 @@ function onWindowResize() {
   }
 }
 
+var filterActive = false;
+var filterColor = { r: 255, g: 255, b: 255 };
+var filterTarget = { r: 255, g: 255, b: 255 };
+
+document.removeEventListener('pointerdown', triggerOverlay);
+document.addEventListener('pointerdown', function() {
+  filterActive = true;
+  filterTarget = {
+    r: Math.floor(Math.random() * 256),
+    g: Math.floor(Math.random() * 256),
+    b: Math.floor(Math.random() * 256)
+  };
+});
+
+function updateFilter() {
+  if (!filterActive) return;
+  filterColor.r += (filterTarget.r - filterColor.r) * 0.02;
+  filterColor.g += (filterTarget.g - filterColor.g) * 0.02;
+  filterColor.b += (filterTarget.b - filterColor.b) * 0.02;
+  var colorHex = (filterColor.r << 16) | (filterColor.g << 8) | (filterColor.b);
+  meshList.forEach(function(mesh) {
+    if (mesh.material && mesh.material.color) {
+      mesh.material.color.setRGB(filterColor.r/255, filterColor.g/255, filterColor.b/255);
+    }
+  });
+}
+
 function animate() {
   requestAnimationFrame(animate);
 
@@ -150,5 +182,5 @@ function animate() {
   renderer.clear();
 
   renderer.render( scene, camera );
-  updateOverlay();
+  updateFilter();
 };
