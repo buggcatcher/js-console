@@ -4,7 +4,50 @@ var renderer, scene, camera, composer, circle, skelet, particle;
 
 window.onload = function() {
   init();
+  createOverlay();
   animate();
+}
+
+var overlayCanvas, overlayCtx;
+var overlayActive = false;
+var overlayColor = { r: 0, g: 0, b: 0 };
+var overlayTarget = { r: 0, g: 0, b: 0 };
+
+function createOverlay() {
+  overlayCanvas = document.createElement('canvas');
+  overlayCanvas.style.position = 'absolute';
+  overlayCanvas.style.top = '0';
+  overlayCanvas.style.left = '0';
+  overlayCanvas.style.pointerEvents = 'none';
+  overlayCanvas.width = window.innerWidth;
+  overlayCanvas.height = window.innerHeight;
+  overlayCanvas.id = 'colorOverlay';
+  document.body.appendChild(overlayCanvas);
+  overlayCtx = overlayCanvas.getContext('2d');
+}
+
+function triggerOverlay() {
+  overlayActive = true;
+  // Scegli un colore casuale come target
+  overlayTarget = {
+    r: Math.floor(Math.random() * 256),
+    g: Math.floor(Math.random() * 256),
+    b: Math.floor(Math.random() * 256)
+  };
+}
+
+document.addEventListener('pointerdown', triggerOverlay);
+
+function updateOverlay() {
+  if (!overlayActive) return;
+  // Interpolazione graduale verso il colore target
+  overlayColor.r += (overlayTarget.r - overlayColor.r) * 0.02;
+  overlayColor.g += (overlayTarget.g - overlayColor.g) * 0.02;
+  overlayColor.b += (overlayTarget.b - overlayColor.b) * 0.02;
+  // Disegna overlay
+  overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+  overlayCtx.fillStyle = `rgba(${Math.round(overlayColor.r)},${Math.round(overlayColor.g)},${Math.round(overlayColor.b)},0.25)`;
+  overlayCtx.fillRect(0, 0, overlayCanvas.width, overlayCanvas.height);
 }
 
 function init() {
@@ -89,6 +132,10 @@ function onWindowResize() {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
+  if (overlayCanvas) {
+    overlayCanvas.width = window.innerWidth;
+    overlayCanvas.height = window.innerHeight;
+  }
 }
 
 function animate() {
@@ -102,5 +149,6 @@ function animate() {
   skelet.rotation.y += 0.0020;
   renderer.clear();
 
-  renderer.render( scene, camera )
+  renderer.render( scene, camera );
+  updateOverlay();
 };
